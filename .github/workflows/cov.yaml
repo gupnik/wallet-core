@@ -1,0 +1,65 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable, beta, nightly]
+        include:
+          - rust: nightly
+            allow_failure: true
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev
+
+    - name: Build kcov
+      run: |
+        cd rust
+        wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
+        tar xzf master.tar.gz
+        cd kcov-master
+        mkdir build
+        cd build
+        cmake ..
+        make
+        make install DESTDIR=../../kcov-build
+        cd ../..
+        rm -rf kcov-master
+
+    - name: Run tests with coverage
+      run: |
+        cd rust
+        cargo test --no-run
+        for file in target/debug/deps/*; do
+          [ -x "${file}" ] || continue
+          mkdir -p "target/cov/$(basename $file)"
+          ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"
+        done
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./rust/target/cov/
+        fail_ci_if_error: false
