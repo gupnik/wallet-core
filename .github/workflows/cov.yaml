@@ -1,4 +1,4 @@
-name: Rust CI
+name: Rust Coverage CI
 
 on:
   push:
@@ -15,10 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust: [stable, beta, nightly]
-        include:
-          - rust: nightly
-            allow_failure: true
+        rust: stable
 
     steps:
     - uses: actions/checkout@v3
@@ -32,7 +29,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev
+        sudo apt-get install -y libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev libbfd-dev
 
     - name: Build kcov
       run: |
