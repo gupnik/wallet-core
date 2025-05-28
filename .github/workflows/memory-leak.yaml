@@ -1,0 +1,62 @@
+name: Memory Leak Check
+
+on:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  memory-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    - name: Install Valgrind
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+
+    - name: Build with debug symbols
+      run: |
+        cd rust
+        RUSTFLAGS="-g" cargo build --verbose
+
+    - name: Run Valgrind memory check
+      run: |
+        cd rust
+        # Run Valgrind on the test binary
+        valgrind --leak-check=full \
+                --show-leak-kinds=all \
+                --track-origins=yes \
+                --verbose \
+                --log-file=valgrind-out.txt \
+                cargo test --no-run
+
+        # Check if there are any memory leaks
+        if grep -q "definitely lost: [1-9]" valgrind-out.txt; then
+          echo "Memory leaks detected!"
+          cat valgrind-out.txt
+          exit 1
+        fi
+
+    - name: Upload Valgrind report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: valgrind-report
+        path: rust/valgrind-out.txt
