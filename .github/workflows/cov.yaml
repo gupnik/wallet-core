@@ -52,7 +52,12 @@ jobs:
         for file in target/debug/deps/*; do
           [ -x "${file}" ] || continue
           mkdir -p "target/cov/$(basename $file)"
-          ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"
+          echo "Processing coverage for $(basename $file)..."
+          if ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; then
+            echo "Successfully processed $(basename $file)"
+          else
+            echo "Failed to process $(basename $file), continuing with next file..."
+          fi
         done
 
     - name: Upload coverage to Codecov
