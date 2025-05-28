@@ -37,13 +37,15 @@ jobs:
     - name: Run memory check with cargo-valgrind
       run: |
         cd rust
-        # Run tests and continue even if some fail
-        cargo valgrind test -- --nocapture || true
+        # Run tests and capture the output
+        cargo valgrind test -- --nocapture > valgrind-out.txt 2>&1 || true
         
         # Check for memory leaks in the output
-        if grep -q "definitely lost: [1-9]" valgrind-out.txt; then
+        if grep -q "Error leaked" valgrind-out.txt; then
           echo "Memory leaks detected!"
-          cat valgrind-out.txt
+          echo "=== Memory Leak Report ==="
+          grep -A 20 "Error leaked" valgrind-out.txt
+          echo "========================="
           exit 1
         fi
 
