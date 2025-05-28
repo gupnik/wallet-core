@@ -247,3 +247,39 @@ fn test_tw_private_key_sign_schnorr() {
     };
     assert!(is_valid, "Error verifying a schnorr signature");
 }
+
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+
+#[derive(Debug)]
+struct Node {
+    value: i32,
+    next: RefCell<Option<Rc<Node>>>,
+    prev: RefCell<Option<Weak<Node>>>,
+}
+
+impl Node {
+    fn new(value: i32) -> Rc<Node> {
+        Rc::new(Node {
+            value,
+            next: RefCell::new(None),
+            prev: RefCell::new(None),
+        })
+    }
+}
+
+#[test]
+fn create_memory_leak_with_rc_cycle() {
+    let node1 = Node::new(1);
+    let node2 = Node::new(2);
+
+    // Create a cycle: node1 → node2 → node1
+    *node1.next.borrow_mut() = Some(Rc::clone(&node2));
+    *node2.prev.borrow_mut() = Some(Rc::downgrade(&node1));
+
+    *node2.next.borrow_mut() = Some(Rc::clone(&node1));
+    *node1.prev.borrow_mut() = Some(Rc::downgrade(&node2));
+
+    // Drop the original strong references
+    // But the cycle keeps them alive
+}
