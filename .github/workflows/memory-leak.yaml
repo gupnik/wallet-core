@@ -31,31 +31,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y valgrind
 
-    - name: Build with debug symbols
+    - name: Install cargo-valgrind
+      run: cargo install cargo-valgrind
+
+    - name: Run memory check with cargo-valgrind
       run: |
         cd rust
-        RUSTFLAGS="-g" cargo build --verbose
-
-    - name: Run Valgrind memory check
-      run: |
-        cd rust
-        # Run Valgrind on all tests
-        valgrind --leak-check=full \
-                --show-leak-kinds=all \
-                --track-origins=yes \
-                --verbose \
-                --log-file=valgrind-out.txt \
-                --error-exitcode=1 \
-                --num-callers=50 \
-                --keep-stacktraces=alloc-and-free \
-                cargo test -- --nocapture
-
-        # Check if there are any memory leaks
-        if grep -q "definitely lost: [1-9]" valgrind-out.txt; then
-          echo "Memory leaks detected!"
-          cat valgrind-out.txt
-          exit 1
-        fi
+        cargo valgrind test -- --nocapture
 
     - name: Upload Valgrind report
       if: always()
