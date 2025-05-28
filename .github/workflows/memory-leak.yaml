@@ -45,7 +45,7 @@ jobs:
                 --track-origins=yes \
                 --verbose \
                 --log-file=valgrind-out.txt \
-                cargo test --no-run
+                cargo test -- --nocapture
 
         # Check if there are any memory leaks
         if grep -q "definitely lost: [1-9]" valgrind-out.txt; then
