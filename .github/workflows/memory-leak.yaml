@@ -13,9 +13,6 @@ concurrency:
 jobs:
   memory-check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [stable]
 
     steps:
     - uses: actions/checkout@v3
@@ -23,10 +20,30 @@ jobs:
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: stable
         override: true
 
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Cache Valgrind
+      uses: actions/cache@v3
+      with:
+        path: /usr/bin/valgrind
+        key: ${{ runner.os }}-valgrind
+        restore-keys: |
+          ${{ runner.os }}-valgrind-
+
     - name: Install Valgrind
+      if: steps.cache-valgrind.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update
         sudo apt-get install -y valgrind
