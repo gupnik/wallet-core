@@ -39,12 +39,15 @@ jobs:
     - name: Run Valgrind memory check
       run: |
         cd rust
-        # Run Valgrind on the test binary
+        # Run Valgrind on all tests
         valgrind --leak-check=full \
                 --show-leak-kinds=all \
                 --track-origins=yes \
                 --verbose \
                 --log-file=valgrind-out.txt \
+                --error-exitcode=1 \
+                --num-callers=50 \
+                --keep-stacktraces=alloc-and-free \
                 cargo test -- --nocapture
 
         # Check if there are any memory leaks
