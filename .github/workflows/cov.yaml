@@ -65,3 +65,5 @@ jobs:
       with:
         directory: ./rust/target/cov/
         fail_ci_if_error: false
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
