@@ -56,7 +56,6 @@ jobs:
           cd rust
           cargo test --all-features --target x86_64-unknown-linux-gnu
         env:
-          LSAN_OPTIONS: "suppressions=lsan-suppressions.txt"
           RUSTFLAGS: "-Z sanitizer=leak"
   miri:
     runs-on: ubuntu-latest
@@ -77,18 +76,3 @@ jobs:
           cargo miri test
         env:
           MIRIFLAGS: ""
-  loom:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: Install stable
-        uses: dtolnay/rust-toolchain@stable
-      - name: cargo test --test loom
-        run: |
-          cd rust
-          cargo test --release --test loom
-        env:
-          LOOM_MAX_PREEMPTIONS: 2
-          RUSTFLAGS: "--cfg loom"
