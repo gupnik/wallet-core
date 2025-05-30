@@ -36,11 +36,11 @@ jobs:
       
     - name: cargo generate-lockfile
       if: hashFiles('Cargo.lock') == ''
-      run: 
+      run: |
         cd rust
         cargo generate-lockfile
     - name: cargo llvm-cov
-      run: 
+      run: |
         cd rust
         cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
     - name: Record Rust version
