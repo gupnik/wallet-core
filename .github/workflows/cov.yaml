@@ -12,80 +12,39 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [nightly]
+    runs-on: ubuntu-24.04
+    if: github.event.pull_request.draft == false
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
 
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev libbfd-dev libdwarf-dev
-
-    - name: cargo install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+          
+      - name: cargo install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+        
+      - name: cargo generate-lockfile
+        if: hashFiles('Cargo.lock') == ''
+        run: |
+          cd rust
+          cargo generate-lockfile
       
-    - name: cargo generate-lockfile
-      if: hashFiles('Cargo.lock') == ''
-      run: |
-        cd rust
-        cargo generate-lockfile
-    - name: cargo llvm-cov
-      run: |
-        cd rust
-        cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
-    - name: Record Rust version
-      run: echo "RUST=$(rustc --version)" >> "$GITHUB_ENV"
-    - name: Upload to codecov.io
-      uses: codecov/codecov-action@v5
-      with:
-        fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }}
-        env_vars: OS,RUST
-
-    # - name: Build kcov
-    #   run: |
-    #     cd rust
-    #     wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
-    #     tar xzf master.tar.gz
-    #     cd kcov-master
-    #     mkdir build
-    #     cd build
-    #     cmake ..
-    #     make
-    #     make install DESTDIR=../../kcov-build
-    #     cd ../..
-    #     rm -rf kcov-master
-
-    # - name: Run tests with coverage
-    #   run: |
-    #     cd rust
-    #     cargo test --no-run
-    #     for file in target/debug/deps/*; do
-    #       [ -x "${file}" ] || continue
-    #       mkdir -p "target/cov/$(basename $file)"
-    #       echo "Processing coverage for $(basename $file)..."
-    #       if ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; then
-    #         echo "Successfully processed $(basename $file)"
-    #       else
-    #         echo "Failed to process $(basename $file), continuing with next file..."
-    #       fi
-    #     done
-
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     directory: ./rust/target/cov/
-    #     fail_ci_if_error: false
-    #   env:
-    #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-    
+      - name: cargo llvm-cov
+        run: |
+          cd rust
+          cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+      
+      - name: Record Rust version
+        run: echo "RUST=$(rustc --version)" >> "$GITHUB_ENV"
+      
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: OS,RUST
