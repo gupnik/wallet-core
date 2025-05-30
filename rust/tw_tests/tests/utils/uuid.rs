@@ -9,7 +9,8 @@ use wallet_core_rs::ffi::utils::uuid_ffi::tw_uuid_random;
 /// Example of the valid UUID: 3cbbcce1-db89-4ea2-be24-88a686be461c
 #[test]
 fn test_tw_uuid_random_is_valid() {
-    let uuid = unsafe { CStr::from_ptr(tw_uuid_random()) }
+    let uuid_ptr = unsafe { tw_uuid_random() };
+    let uuid = unsafe { CStr::from_ptr(uuid_ptr) }
         .to_str()
         .unwrap();
 
@@ -29,7 +30,8 @@ fn test_tw_uuid_random_do_not_repeat() {
     // Use `Vec` instead of `HashSet` here to make each iteration as fast as possible.
     let mut uuids = Vec::with_capacity(ITERATIONS);
     for _ in 0..ITERATIONS {
-        let uuid = unsafe { CStr::from_ptr(tw_uuid_random()) }
+        let uuid_ptr = unsafe { tw_uuid_random() };
+        let uuid = unsafe { CStr::from_ptr(uuid_ptr) }
             .to_str()
             .unwrap();
         uuids.push(uuid);
