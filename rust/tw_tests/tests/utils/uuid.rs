@@ -3,18 +3,16 @@
 // Copyright © 2017 Trust Wallet.
 
 use std::collections::HashSet;
-use std::ffi::CStr;
+use std::ffi::CString;
 use wallet_core_rs::ffi::utils::uuid_ffi::tw_uuid_random;
 
 /// Example of the valid UUID: 3cbbcce1-db89-4ea2-be24-88a686be461c
 #[test]
 fn test_tw_uuid_random_is_valid() {
     let uuid_ptr = unsafe { tw_uuid_random() };
-    let uuid = unsafe { CStr::from_ptr(uuid_ptr) }
-        .to_str()
-        .unwrap();
+    let uuid = unsafe { CString::from_raw(uuid_ptr) };
 
-    let tokens: Vec<_> = uuid.split("-").collect();
+    let tokens: Vec<_> = uuid.to_str().unwrap().split("-").collect();
     assert_eq!(tokens.len(), 5);
     assert_eq!(tokens[0].len(), 8);
     assert_eq!(tokens[1].len(), 4);
@@ -31,12 +29,10 @@ fn test_tw_uuid_random_do_not_repeat() {
     let mut uuids = Vec::with_capacity(ITERATIONS);
     for _ in 0..ITERATIONS {
         let uuid_ptr = unsafe { tw_uuid_random() };
-        let uuid = unsafe { CStr::from_ptr(uuid_ptr) }
-            .to_str()
-            .unwrap();
-        uuids.push(uuid);
+        let uuid = unsafe { CString::from_raw(uuid_ptr) };
+        uuids.push(uuid.to_str().unwrap().to_string());
     }
 
-    let unique_uuids: HashSet<&str> = uuids.into_iter().collect();
+    let unique_uuids: HashSet<String> = uuids.into_iter().collect();
     assert_eq!(unique_uuids.len(), ITERATIONS);
 }
